@@ -1,47 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 
-export default function App() {
-  const [currentPhrase, setCurrentPhrase] = useState('');
-  const phrases = ["code", "make beats", "hug puppies"];
-  let sleepTime = 100;
-
-  const sleep = (ms) => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  };
-
-  const writeLoop = async () => {
-    let curPhraseIndex = 0;
-    while (true) {
-      let curWord = phrases[curPhraseIndex];
-
-      for (let i = 0; i < curWord.length; i++) {
-        setCurrentPhrase(curWord.substring(0, i + 1));
-        await sleep(sleepTime);
-      }
-
-      await sleep(sleepTime * 10);
-
-      for (let i = curWord.length; i > 0; i--) {
-        setCurrentPhrase(curWord.substring(0, i - 1));
-        await sleep(sleepTime);
-      }
-
-      await sleep(sleepTime * 5);
-
-      curPhraseIndex = (curPhraseIndex + 1) % phrases.length;
-    }
-  };
-
+import Menu from "./Menu.jsx";
+function App() {
+  const [brushColor, setBrushColor] = useState("green");
+  const [brushWidth, setBrushWidth] = useState(8);
+  const [brushOpacity, setBrushOpacity] = useState(0.5);
+  const canvasRef = useRef(null);
+  const ctxRef = useRef(null);
+  const [isDraw, setIsDraw] = useState(false);
   useEffect(() => {
-    writeLoop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.lineCap = "round";
+    ctx.lineJoine = "round";
+    ctx.globalAlpha = brushOpacity;
+    ctx.strokeStyle = brushColor;
 
+    ctx.lineWidth = brushWidth;
+    ctxRef.current = ctx;
+  }, [brushColor, brushWidth, brushOpacity]);
+  const startDraw = (e) => {
+    ctxRef.current.beginPath();
+    ctxRef.current.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    setIsDraw(true);
+  };
+
+  const endDraw = (e) => {
+    ctxRef.current.closePath();
+    setIsDraw(false);
+  };
+
+  const draw = (e) => {
+    if (!isDraw) {
+      return;
+    }
+    ctxRef.current.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+
+    ctxRef.current.stroke();
+  };
   return (
-    <div>
-      <h1>
-        Hey, I'm Tom 👋<br />I like to {currentPhrase}<span id="cursor">|</span>
-      </h1>
+    <div className="App">
+      <h1>Paint App</h1>
+      <div className="draw-area">
+        <Menu
+          setBrushColor={setBrushColor}
+          setBrushOpacity={setBrushOpacity}
+          setBrushWidth={setBrushWidth}
+        />
+
+        <canvas
+          width="1200px"
+          height="500px"
+          ref={canvasRef}
+          onMouseDown={startDraw}
+          onMouseUp={endDraw}
+          onMouseMove={draw}
+        ></canvas>
+      </div>
     </div>
   );
 }
+
+export default App;
